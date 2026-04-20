@@ -34,7 +34,7 @@
 
             try {
                 const local = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej);
+                    navigator.geolocation.getCurrentPosition(res, rej, {timeout: 10000});
                 });
 
                 const stream = await navigator.mediaDevices.getUserMedia({ 
